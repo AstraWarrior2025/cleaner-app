@@ -30,7 +30,16 @@ jobs:
       - name: Install system packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pyqt5 python3-pip python3-setuptools xfsprogs btrfs-progs flatpak
+          sudo apt-get install -y python3-pyqt5 python3-pip python3-setuptools xfsprogs btrfs-progs flatpak lsb-release
+
+      - name: Check Debian-based compatibility
+        run: |
+          distro=$(lsb_release -is || true)
+          if [ "$distro" != "Ubuntu" ] && [ "$distro" != "Debian" ] && [ "$distro" != "AstraLinux" ]; then
+            echo "❌ Unsupported distribution: $distro"
+            exit 1
+          fi
+          echo "✅ Detected Debian-based system: $distro"
 
       - name: Build executable with PyInstaller
         run: |
@@ -65,7 +74,7 @@ jobs:
 
       - name: Build DEB
         run: |
-          dpkg-deb --build pkg cleaner_0.0.1-alpha_amd64.deb
+          dpkg-deb --build --uniform-compression pkg cleaner_0.0.1-alpha_amd64.deb
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
