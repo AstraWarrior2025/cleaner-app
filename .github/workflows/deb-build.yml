@@ -5,10 +5,14 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  release:
+    types: [created]
 
 jobs:
   build-deb:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -78,3 +82,9 @@ jobs:
         with:
           name: cleaner-deb
           path: cleaner_*.deb
+
+      - name: Upload to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: cleaner_*.deb
