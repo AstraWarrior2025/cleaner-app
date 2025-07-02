@@ -83,8 +83,14 @@ jobs:
           name: cleaner-deb
           path: cleaner_*.deb
 
-      - name: Upload to GitHub Release
+      - name: Upload to GitHub Release (.deb)
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v1
         with:
           files: cleaner_*.deb
+
+      - name: Upload raw binary to GitHub Release (.bin)
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/cleaner
