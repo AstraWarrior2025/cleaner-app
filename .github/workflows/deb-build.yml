@@ -40,42 +40,36 @@ jobs:
         run: |
           rm -rf pkg/
           mkdir -p pkg/DEBIAN pkg/usr/local/bin pkg/usr/share/applications
-          cp dist/cleaner pkg/usr/local/bin/cleaner || echo "Binary not found!"
-          chmod 755 pkg/usr/local/bin/cleaner || true
+          cp dist/cleaner pkg/usr/local/bin/cleaner
+          chmod 755 pkg/usr/local/bin/cleaner
 
-          # Write control file
-          echo "Package: cleaner" > pkg/DEBIAN/control
-          echo "Version: 0.0.1-alpha" >> pkg/DEBIAN/control
-          echo "Section: utils" >> pkg/DEBIAN/control
-          echo "Priority: optional" >> pkg/DEBIAN/control
-          echo "Architecture: amd64" >> pkg/DEBIAN/control
-          echo "Depends: python3, python3-pyqt5, xfsprogs, btrfs-progs, flatpak" >> pkg/DEBIAN/control
-          echo "Maintainer: darkcrusader002@gmail.com" >> pkg/DEBIAN/control
-          echo "Description: Cross-Platform Cleaner GUI application" >> pkg/DEBIAN/control
-          echo " Приложение для очистки временных файлов, кэша браузеров, дефрагментации," >> pkg/DEBIAN/control
-          echo " управления планировщиком, отправки уведомлений по Email и Slack." >> pkg/DEBIAN/control
+          cat > pkg/DEBIAN/control <<EOF
+Package: cleaner
+Version: 0.0.1-alpha
+Section: utils
+Priority: optional
+Architecture: amd64
+Depends: python3, python3-pyqt5, xfsprogs, btrfs-progs, flatpak
+Maintainer: darkcrusader002@gmail.com
+Description: Cross-Platform Cleaner GUI application
+ Приложение для очистки временных файлов, кэша браузеров, дефрагментации,
+ управления планировщиком, отправки уведомлений по Email и Slack.
+EOF
 
-          # Write desktop entry
-          echo "[Desktop Entry]" > pkg/usr/share/applications/cleaner.desktop
-          echo "Name=Cleaner" >> pkg/usr/share/applications/cleaner.desktop
-          echo "Comment=Cross-Platform System Cleaner" >> pkg/usr/share/applications/cleaner.desktop
-          echo "Exec=/usr/local/bin/cleaner" >> pkg/usr/share/applications/cleaner.desktop
-          echo "Icon=utilities-terminal" >> pkg/usr/share/applications/cleaner.desktop
-          echo "Terminal=false" >> pkg/usr/share/applications/cleaner.desktop
-          echo "Type=Application" >> pkg/usr/share/applications/cleaner.desktop
-          echo "Categories=Utility;" >> pkg/usr/share/applications/cleaner.desktop
-
-      - name: Debug DEB folder structure
-        run: |
-          echo "Listing pkg directory:"
-          find pkg/
-          echo
-          echo "Control file contents:"
-          cat pkg/DEBIAN/control
+          cat > pkg/usr/share/applications/cleaner.desktop <<EOF
+[Desktop Entry]
+Name=Cleaner
+Comment=Cross-Platform System Cleaner
+Exec=/usr/local/bin/cleaner
+Icon=utilities-terminal
+Terminal=false
+Type=Application
+Categories=Utility;
+EOF
 
       - name: Build DEB
         run: |
-          dpkg-deb --build pkg cleaner_${{ github.sha }}.deb
+          dpkg-deb --build pkg cleaner_0.0.1-alpha_amd64.deb
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
@@ -83,14 +77,10 @@ jobs:
           name: cleaner-deb
           path: cleaner_*.deb
 
-      - name: Upload to GitHub Release (.deb)
+      - name: Upload to GitHub Release (.deb and .bin)
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v1
         with:
-          files: cleaner_*.deb
-
-      - name: Upload raw binary to GitHub Release (.bin)
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v1
-        with:
-          files: dist/cleaner
+          files: |
+            cleaner_*.deb
+            dist/cleaner
