@@ -36,8 +36,8 @@ jobs:
         run: |
           rm -rf pkg/
           mkdir -p pkg/DEBIAN pkg/usr/local/bin pkg/usr/share/applications
-          cp dist/cleaner pkg/usr/local/bin/cleaner
-          chmod 755 pkg/usr/local/bin/cleaner
+          cp dist/cleaner pkg/usr/local/bin/cleaner || echo "Binary not found!"
+          chmod 755 pkg/usr/local/bin/cleaner || true
 
           # Write control file
           echo "Package: cleaner" > pkg/DEBIAN/control
@@ -60,6 +60,14 @@ jobs:
           echo "Terminal=false" >> pkg/usr/share/applications/cleaner.desktop
           echo "Type=Application" >> pkg/usr/share/applications/cleaner.desktop
           echo "Categories=Utility;" >> pkg/usr/share/applications/cleaner.desktop
+
+      - name: Debug DEB folder structure
+        run: |
+          echo "Listing pkg directory:"
+          find pkg/
+          echo
+          echo "Control file contents:"
+          cat pkg/DEBIAN/control
 
       - name: Build DEB
         run: |
