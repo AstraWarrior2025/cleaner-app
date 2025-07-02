@@ -72,9 +72,15 @@ jobs:
           echo "Type=Application" >> pkg/usr/share/applications/cleaner.desktop
           echo "Categories=Utility;" >> pkg/usr/share/applications/cleaner.desktop
 
-      - name: Build DEB (default compression)
+      - name: Build DEB with gzip compression (legacy compatible)
         run: |
-          fakeroot dpkg-deb --build pkg cleaner_0.0.1-alpha_amd64.deb
+          mkdir -p out
+          cd pkg
+          tar czf ../control.tar.gz --owner=0 --group=0 DEBIAN
+          tar czf ../data.tar.gz --owner=0 --group=0 . --exclude=DEBIAN
+          cd ..
+          echo '2.0' > debian-binary
+          ar r cleaner_0.0.1-alpha_amd64.deb debian-binary control.tar.gz data.tar.gz
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
