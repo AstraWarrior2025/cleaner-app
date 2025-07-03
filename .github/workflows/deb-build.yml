@@ -10,15 +10,16 @@ on:
 
 jobs:
   build-deb:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     permissions:
       contents: write
     steps:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3 python3-pyqt5 python3-setuptools xfsprogs btrfs-progs curl binutils
-          pip3 install pyinstaller
+          sudo apt-get install -y python3 python3-pyqt5 python3-setuptools xfsprogs btrfsprogs curl binutils fakeroot
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pyinstaller==5.13.2
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,7 +50,7 @@ jobs:
           Section: utils
           Priority: optional
           Architecture: amd64
-          Depends: python3, python3-pyqt5, xfsprogs, btrfs-progs, docker.io, flatpak
+          Depends: python3, python3-pyqt5, xfsprogs, btrfsprogs, docker.io, flatpak
           Maintainer: darkcrusader002@gmail.com
           Description: Cross-Platform Cleaner GUI application
            Приложение для очистки временных файлов, кэша браузеров, дефрагментации,
