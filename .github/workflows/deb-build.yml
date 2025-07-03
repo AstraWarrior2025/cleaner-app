@@ -11,26 +11,18 @@ on:
 jobs:
   build-deb:
     runs-on: ubuntu-latest
+    container:
+      image: debian:bullseye
     permissions:
       contents: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller
+          apt-get update
+          apt-get install -y python3 python3-pyqt5 python3-pip python3-setuptools pyinstaller xfsprogs btrfs-progs curl
 
-      - name: Install system packages for packaging
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pyqt5 python3-pip python3-setuptools xfsprogs btrfs-progs
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Build executable with PyInstaller
         run: |
@@ -73,14 +65,17 @@ jobs:
           Categories=Utility;
           EOF
 
-      - name: Build DEB with gzip compression (legacy-compatible)
+      - name: Manually build DEB with gzip (for compatibility with older systems)
         run: |
+          mkdir -p build-deb
           cd pkg
-          tar --owner=0 --group=0 -czf ../control.tar.gz DEBIAN
-          tar --owner=0 --group=0 -czf ../data.tar.gz usr
-          cd ..
+          tar -czf ../build-deb/control.tar.gz -C . DEBIAN
+          tar -czf ../build-deb/data.tar.gz -C . usr
+          cd ../build-deb
           echo '2.0' > debian-binary
           ar r cleaner_0.0.1-alpha_amd64.deb debian-binary control.tar.gz data.tar.gz
+          file cleaner_0.0.1-alpha_amd64.deb
+          cp cleaner_0.0.1-alpha_amd64.deb ../
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
