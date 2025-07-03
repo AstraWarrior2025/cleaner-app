@@ -47,7 +47,7 @@ jobs:
 
       - name: Prepare DEB package structure
         run: |
-          rm -rf pkg/
+          rm -rf pkg/ build/
           mkdir -p pkg/DEBIAN pkg/usr/local/bin pkg/usr/share/applications
           cp dist/cleaner pkg/usr/local/bin/cleaner
           chmod 755 pkg/usr/local/bin/cleaner
@@ -72,15 +72,13 @@ jobs:
           echo "Type=Application" >> pkg/usr/share/applications/cleaner.desktop
           echo "Categories=Utility;" >> pkg/usr/share/applications/cleaner.desktop
 
-      - name: Build DEB with gzip compression (legacy compatible)
+      - name: Build DEB with dpkg-deb and gzip (legacy compatible)
         run: |
-          mkdir -p out
-          cd pkg
-          tar czf ../control.tar.gz --owner=0 --group=0 DEBIAN
-          tar czf ../data.tar.gz --owner=0 --group=0 . --exclude=DEBIAN
-          cd ..
-          echo '2.0' > debian-binary
-          ar r cleaner_0.0.1-alpha_amd64.deb debian-binary control.tar.gz data.tar.gz
+          mkdir -p build
+          cp -a pkg/DEBIAN build/DEBIAN
+          mkdir -p build/usr
+          cp -a pkg/usr/* build/usr/
+          fakeroot dpkg-deb -b --root-owner-group build cleaner_0.0.1-alpha_amd64.deb
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
