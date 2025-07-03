@@ -73,9 +73,14 @@ jobs:
           Categories=Utility;
           EOF
 
-      - name: Build DEB
+      - name: Build DEB with gzip compression (legacy-compatible)
         run: |
-          dpkg-deb --build pkg cleaner_0.0.1-alpha_amd64.deb
+          cd pkg
+          tar --owner=0 --group=0 -czf ../control.tar.gz DEBIAN
+          tar --owner=0 --group=0 -czf ../data.tar.gz usr
+          cd ..
+          echo '2.0' > debian-binary
+          ar r cleaner_0.0.1-alpha_amd64.deb debian-binary control.tar.gz data.tar.gz
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
