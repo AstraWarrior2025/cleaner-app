@@ -2,9 +2,9 @@ name: Build and Package Cleaner DEB
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
   release:
     types: [created]
 
@@ -22,24 +22,15 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
 
-      - name: Install system packages
+      - name: Install system packages for packaging
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pyqt5 python3-pip python3-setuptools xfsprogs btrfs-progs flatpak lsb-release
-
-      - name: Check Debian-based compatibility
-        run: |
-          distro=$(lsb_release -is || true)
-          if [ "$distro" != "Ubuntu" ] && [ "$distro" != "Debian" ] && [ "$distro" != "AstraLinux" ]; then
-            echo "❌ Unsupported distribution: $distro"
-            exit 1
-          fi
-          echo "✅ Detected Debian-based system: $distro"
+          sudo apt-get install -y python3-pyqt5 python3-pip python3-setuptools xfsprogs btrfs-progs
 
       - name: Build executable with PyInstaller
         run: |
@@ -47,49 +38,53 @@ jobs:
 
       - name: Prepare DEB package structure
         run: |
-          rm -rf pkg/ build/
-          mkdir -p pkg/DEBIAN pkg/usr/local/bin pkg/usr/share/applications
+          rm -rf pkg
+          mkdir -p pkg/DEBIAN
+          mkdir -p pkg/usr/local/bin
+          mkdir -p pkg/usr/share/applications
+
+          # Copy binary
           cp dist/cleaner pkg/usr/local/bin/cleaner
           chmod 755 pkg/usr/local/bin/cleaner
 
-          echo "Package: cleaner" > pkg/DEBIAN/control
-          echo "Version: 0.0.1-alpha" >> pkg/DEBIAN/control
-          echo "Section: utils" >> pkg/DEBIAN/control
-          echo "Priority: optional" >> pkg/DEBIAN/control
-          echo "Architecture: amd64" >> pkg/DEBIAN/control
-          echo "Depends: python3, python3-pyqt5, xfsprogs, btrfs-progs, flatpak" >> pkg/DEBIAN/control
-          echo "Maintainer: darkcrusader002@gmail.com" >> pkg/DEBIAN/control
-          echo "Description: Cross-Platform Cleaner GUI application" >> pkg/DEBIAN/control
-          echo " Приложение для очистки временных файлов, кэша браузеров, дефрагментации," >> pkg/DEBIAN/control
-          echo " управления планировщиком, отправки уведомлений по Email и Slack." >> pkg/DEBIAN/control
+          # Create control file
+          cat << 'EOF' > pkg/DEBIAN/control
+          Package: cleaner
+          Version: 0.0.1-alpha
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Depends: python3, python3-pyqt5, xfsprogs, btrfs-progs, docker.io, flatpak
+          Maintainer: darkcrusader002@gmail.com
+          Description: Cross-Platform Cleaner GUI application
+           Приложение для очистки временных файлов, кэша браузеров, дефрагментации,
+           управления планировщиком, отправки уведомлений по Email и Slack.
+          EOF
 
-          echo "[Desktop Entry]" > pkg/usr/share/applications/cleaner.desktop
-          echo "Name=Cleaner" >> pkg/usr/share/applications/cleaner.desktop
-          echo "Comment=Cross-Platform System Cleaner" >> pkg/usr/share/applications/cleaner.desktop
-          echo "Exec=/usr/local/bin/cleaner" >> pkg/usr/share/applications/cleaner.desktop
-          echo "Icon=utilities-terminal" >> pkg/usr/share/applications/cleaner.desktop
-          echo "Terminal=false" >> pkg/usr/share/applications/cleaner.desktop
-          echo "Type=Application" >> pkg/usr/share/applications/cleaner.desktop
-          echo "Categories=Utility;" >> pkg/usr/share/applications/cleaner.desktop
+          # Create desktop entry
+          cat << 'EOF' > pkg/usr/share/applications/cleaner.desktop
+          [Desktop Entry]
+          Name=Cleaner
+          Comment=Cross-Platform System Cleaner
+          Exec=/usr/local/bin/cleaner
+          Icon=utilities-terminal
+          Terminal=false
+          Type=Application
+          Categories=Utility;
+          EOF
 
-      - name: Build DEB with dpkg-deb and gzip (legacy compatible)
+      - name: Build DEB
         run: |
-          mkdir -p build
-          cp -a pkg/DEBIAN build/DEBIAN
-          mkdir -p build/usr
-          cp -a pkg/usr/* build/usr/
-          fakeroot dpkg-deb -b --root-owner-group build cleaner_0.0.1-alpha_amd64.deb
+          dpkg-deb --build pkg cleaner_0.0.1-alpha_amd64.deb
 
       - name: Upload package artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: cleaner-deb
           path: cleaner_*.deb
 
-      - name: Upload to GitHub Release (.deb and .bin)
+      - name: Upload DEB to GitHub Release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            cleaner_*.deb
-            dist/cleaner
+          files: cleaner_*.deb
